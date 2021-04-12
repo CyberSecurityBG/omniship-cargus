@@ -9,14 +9,20 @@ use http\Client\Response;
 class Client
 {
 
-    protected $key;
+    protected $username;
+    protected $password;
+    protected $key_primary;
+    protected $key_secondary;
     protected $error;
-
-    const SERVICE_PRODUCTION_URL = 'https://api.berry.bg/v2/';
-
-    public function __construct($key)
+    protected $token;
+    const SERVICE_PRODUCTION_URL = 'https://urgentcargus.azure-api.net/api/';
+    public function __construct($username, $password, $primary_key, $secondary_key, $token = null)
     {
-        $this->key = $key;
+        $this->username = $username;
+        $this->password = $password;
+        $this->key_primary = $primary_key;
+        $this->key_secondary = $secondary_key;
+        $this->token = $token;
     }
 
 
@@ -25,80 +31,74 @@ class Client
         return $this->error;
     }
 
-    protected function SetHeader($ednpoint, $method, $api_key){
+    protected function SetHeader($ednpoint, $method, $key = null){
         $header['Content-Type'] = 'application/json';
         $header['Accept'] = 'application/vnd.api+json';
-        if($ednpoint == 'users' && $method == 'POST'){
+        if($ednpoint == 'LoginUser' && $method == 'post'){
+            $header['Ocp-Apim-Subscription-Key'] = $this->key_primary;
         } else {
-            $header['X-BERRY-APIKEY'] = $api_key;
+            $header['Authorization'] = 'Bearer '.$key;
+            $header['Ocp-Apim-Subscription-Key'] = $this->key_secondary;
         }
         return $header;
     }
 
-    public function SendRequest($method, $endpoint, $data = [], $ignore = null, $key = null){
-        if(is_null($key)){
-            $key = $this->key;
-        }
+    public function getToken(){
         try {
-            $client = new HttpClient(['base_uri' => $this->getServiceEndpoint()]);
-            $response = $client->request($method, $endpoint, [
-                'json' => $data,
-                'headers' => $this->SetHeader($endpoint, $method, $this->key)
+            $client = new HttpClient(['base_uri' => self::SERVICE_PRODUCTION_URL]);
+            $response = $client->request('POST', 'LoginUser', [
+                'json' =>  ['UserName' => $this->username, 'password' => $this->password],
+                'headers' => $this->SetHeader('LoginUser', 'POST', $this->key_primary)
             ]);
             return json_decode($response->getBody()->getContents());
         } catch (\Exception $e) {
-            if($ignore && $ignore == $e->getCode()){
-                return true;
-            }
-            $this->error = [
+             $this->error = [
                 'code' => $e->getCode(),
-                'error' => $e->getResponse()->getBody()->getContents()
+                'error' => json_decode($e->getResponse()->getBody()->getContents())
             ];
         }
     }
 
-    /**
-     * Get url associated to a specific service
-     *
-     * @return string URL for the service
-     */
-    public function getServiceEndpoint()
-    {
-        return static::SERVICE_PRODUCTION_URL;
-    }
-
-    public function CreateUser($data){
-        $SendRequest = $this->SendRequest('POST', 'users', $data);
-        if($SendRequest != null){
-            return $SendRequest->api_app_keys[0];
-        } else {
-            return json_decode($this->error['error']);
+    public function SendRequest($method, $endpoint, $data = []){
+        $Token = $this->getToken();
+        if(!is_null($Token)) {
+            try {
+                $client = new HttpClient(['base_uri' => self::SERVICE_PRODUCTION_URL]);
+                $response = $client->request($method, $endpoint, [
+                    'json' => $data,
+                    'headers' => $this->SetHeader($endpoint, $method, $Token)
+                ]);
+                return json_decode($response->getBody()->getContents());
+            } catch (\Exception $e) {
+                 $this->error = [
+                    'code' => $e->getCode(),
+                    'error' => json_decode($e->getResponse()->getBody()->getContents())
+                ];
+            }
         }
     }
 
-    public function GetWarehouses($api_key){
-        return $this->SendRequest('GET', 'addresses','', '' ,$api_key);
-    }
-
-    public function GetProfile($api_key){
-        return $this->SendRequest('GET', 'users','', '' ,$api_key);
-    }
-
-    public function GetServices(){
-        $AvailableSlots = $this->SendRequest('get', 'packages/next_available_slots?count=6');
-        $slots = [];
-        foreach ($AvailableSlots as $service) {
-            $ServivePickUp = Carbon::createFromTimeString($service[0], 'UTC');
-            $ServiceId = $ServivePickUp->format('Y-m-d_H-i');
-            $ServivePickUp->setTimezone('Europe/Sofia');
-            $ServiceDropOff = Carbon::createFromTimeString($service[1], 'UTC');
-            $ServiceId = $ServiceId . '__' . $ServiceDropOff->format('Y-m-d_H-i');
-            $ServiceDropOff->setTimezone('Europe/Sofia');
-            $slots[] = [
-                'id' => $ServiceId,
-                'name' => 'Доставка на ' . $ServivePickUp->format('d.m.Y') . ' от ' . $ServivePickUp->format('H:i') . ' до ' . $ServiceDropOff->format('H:i'),
-            ];
+    public function getCountries(){
+        $coutries = $this->SendRequest('GET', 'Countries');
+        if(is_null($coutries)){
+            return $this->getError();
         }
-        return $slots;
+        return $coutries;
+    }
+
+    public function getLocalities($country_id, $county_id){
+        $coutries = $this->SendRequest('GET', 'Localities?countryId='.$country_id.'&countyId='.$county_id);
+        if(is_null($coutries)){
+            return $this->getError();
+        }
+        return $coutries;
+    }
+
+    public function getCities($country_id){
+        $coutries = $this->SendRequest('GET', 'Counties?countryId='.$country_id);
+        if(is_null($coutries)){
+            return $this->getError();
+        }
+        return $coutries;
     }
 }

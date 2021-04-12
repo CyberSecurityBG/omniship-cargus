@@ -2,6 +2,10 @@
 
 namespace Omniship\Cargus;
 
+use Omniship\Cargus\Http\ShippingQuoteRequest;
+use Omniship\Cargus\Http\ValidateCredentialsRequest;
+use Omniship\Cargus\Http\CreateBillOfLadingRequest;
+
 use Omniship\Common\AbstractGateway;
 use Omniship\Cargus\Client;
 
@@ -36,23 +40,44 @@ class Gateway extends AbstractGateway
     public function getDefaultParameters()
     {
         return array(
-            'key' => '',
-            'personal_phone' => ''
+            'username' => '',
+            'password' => '',
+            'key_primary' => '',
+            'key_secondary' => '',
         );
     }
 
-    public function getKey() {
-        return $this->getParameter('key');
+    public function getUsername() {
+        return $this->getParameter('username');
     }
 
-    /**
-     * @param $value
-     * @return $this
-     */
-    public function setKey($value) {
-        return $this->setParameter('key', $value);
+    public function setUsername($value) {
+        return $this->setParameter('username', $value);
     }
 
+    public function getPassword() {
+        return $this->getParameter('password');
+    }
+
+    public function setPassword($value) {
+        return $this->setParameter('password', $value);
+    }
+
+    public function getKeyPrimary() {
+        return $this->getParameter('key_primary');
+    }
+
+    public function setKeyPrimary($value) {
+        return $this->setParameter('key_primary', $value);
+    }
+
+    public function getKeySecondary() {
+        return $this->getParameter('key_secondary');
+    }
+
+    public function setKeySecondary($value) {
+        return $this->setParameter('key_secondary', $value);
+    }
 
     /**
      * @return mixed
@@ -65,7 +90,7 @@ class Gateway extends AbstractGateway
     public function getClient()
     {
         if (is_null($this->client)) {
-            $this->client = new Client($this->getKey());
+            $this->client = new Client($this->getUsername(), $this->getPassword(), $this->getKeyPrimary(), $this->getKeySecondary());
         }
 
         return $this->client;
@@ -89,6 +114,7 @@ class Gateway extends AbstractGateway
     {
         return $this->createRequest(ValidateCredentialsRequest::class, $parameters);
     }
+
 
     public function getQuotes($parameters = [])
     {
@@ -138,12 +164,10 @@ class Gateway extends AbstractGateway
         $explode = explode('|', $parcel_id);
         return static::TRACKING_URL.$explode[0];
     }
-
     public function trackingParcel($bol_id)
     {
         return $this->createRequest(TrackingParcelRequest::class, $this->setBolId($bol_id)->getParameters());
     }
-
     public function codPayment($bol_id)
     {
         return $this->createRequest(CodPaymentRequest::class, $this->setBolId($bol_id)->getParameters());
