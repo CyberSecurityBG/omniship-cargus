@@ -126,11 +126,6 @@ class Gateway extends AbstractGateway
         }
         return $this->createRequest(ShippingQuoteRequest::class, $this->getParameters() + $parameters);
     }
-
-    public function getServices($parameters = []){
-        return $this->createRequest(ServicesRequest::class, $parameters);
-    }
-
     public function supportsCashOnDelivery()
     {
         return true;
@@ -149,27 +144,5 @@ class Gateway extends AbstractGateway
             $parameters = [];
         }
         return $this->createRequest(CreateBillOfLadingRequest::class, $this->getParameters() + $parameters);
-    }
-    public function cancelBillOfLading($bol_id)
-    {
-        $this->setBolId($bol_id);
-        return $this->createRequest(CancelBillOfLadingRequest::class, $this->getParameters());
-    }
-    public function getPdf($bol_id)
-    {
-        return $this->createRequest(GetPdfRequest::class, $this->setBolId($bol_id)->getParameters());
-    }
-    public function trackingUrl($parcel_id)
-    {
-        $explode = explode('|', $parcel_id);
-        return static::TRACKING_URL.$explode[0];
-    }
-    public function trackingParcel($bol_id)
-    {
-        return $this->createRequest(TrackingParcelRequest::class, $this->setBolId($bol_id)->getParameters());
-    }
-    public function codPayment($bol_id)
-    {
-        return $this->createRequest(CodPaymentRequest::class, $this->setBolId($bol_id)->getParameters());
     }
 }
