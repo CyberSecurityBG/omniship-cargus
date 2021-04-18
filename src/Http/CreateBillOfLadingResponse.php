@@ -16,14 +16,15 @@ class CreateBillOfLadingResponse extends AbstractResponse
      */
     public function getData()
     {
-        if(is_null($this->data) || isset($this->data->Error)){
+        if(is_null($this->data)  || isset($this->data['error']->Error)){
             return $this->error;
         }
-        $respons = $this->data->ACSOutputResponce->ACSValueOutput[0];
+        $data = $this->data;
         $result = new Create();
-        $result->setBolId($respons->Voucher_No);
-        $result->setBillOfLadingSource($this->getClient()->PrintVoucher($respons->Voucher_No));
+        $result->setBolId($data[0]->BarCode);
+        $result->setBillOfLadingSource($this->getClient()->getPdf($data[0]->BarCode, 1));
         $result->setBillOfLadingType($result::PDF);
+        $result->setTotal($data[0]->ShippingCost->GrandTotal);
         return $result;
     }
 

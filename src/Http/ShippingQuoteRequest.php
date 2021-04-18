@@ -8,21 +8,21 @@ class ShippingQuoteRequest extends AbstractRequest
 
     public function getData()
     {
-       return [
-           'FromLocalityId' => $this->getSenderAddress()->getState()->getId(),
-           'ToLocalityId' => $this->getReceiverAddress()->getState()->getId(),
-           'Parcels' => 2,
+        return [
+           'FromLocalityId' => $this->getSenderAddress()->getCity()->getId(),
+           'ToLocalityId' => $this->getReceiverAddress()->getCity()->getId(),
+           'Parcels' => count($this->getItems()),
            'Envelopes' => 0,
-           'TotalWeight' => 5,
-           'DeclaredValue' => 0,
-           'CashRepayment' => 173.42,
+           'TotalWeight' => (int)$this->getWeight(),
+           'DeclaredValue' => ($this->getOtherParameters('declared') == 1) ? $this->getDeclaredAmount() : 0,
+           'CashRepayment' => ($this->getOtherParameters('cd') == 1) ? $this->getCashOnDeliveryAmount() : 0,
            'BankRepayment' => 0,
            'PaymentInstrumentId' => 0,
            'PaymentInstrumentValue' => 0,
-           'OpenPackage' => true,
+           'OpenPackage' => $this->getOtherParameters('open_package'),
            'SaturdayDelivery' => false,
            'MorningDelivery' => false,
-           'ShipmentPayer' => 1,
+           'ShipmentPayer' => ($this->getPayer() == 'SENDER') ? 1 : 2,
        ];
     }
 
@@ -33,7 +33,6 @@ class ShippingQuoteRequest extends AbstractRequest
 
     protected function createResponse($data)
     {
-       // dd($data);
         return $this->response = new ShippingQuoteResponse($this, $data);
     }
 }

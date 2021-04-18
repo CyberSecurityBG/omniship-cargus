@@ -2,6 +2,7 @@
 
 namespace Omniship\Cargus;
 
+use Omniship\Cargus\Http\GetPdfRequest;
 use Omniship\Cargus\Http\ShippingQuoteRequest;
 use Omniship\Cargus\Http\ValidateCredentialsRequest;
 use Omniship\Cargus\Http\CreateBillOfLadingRequest;
@@ -144,5 +145,15 @@ class Gateway extends AbstractGateway
             $parameters = [];
         }
         return $this->createRequest(CreateBillOfLadingRequest::class, $this->getParameters() + $parameters);
+    }
+
+    public function getPdf($bol_id)
+    {
+        return $this->createRequest(GetPdfRequest::class, $this->setBolId($bol_id)->getParameters());
+    }
+
+    public function trackingUrl($parcel_id)
+    {
+        return sprintf(static::TRACKING_URL, $parcel_id);
     }
 }

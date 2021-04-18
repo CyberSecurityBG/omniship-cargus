@@ -10,7 +10,8 @@ class ShippingQuoteResponse extends AbstractResponse
         if(is_null($this->data) || isset($this->data->Error)){
             return $this->error;
         }
-        return [
+        $result = new ShippingQuoteBag();
+        $result->push( [
             'id' => 1,
             'name' => 'Shipping to adress',
             'description' => null,
@@ -27,7 +28,7 @@ class ShippingQuoteResponse extends AbstractResponse
             'allowance_fixed_time_delivery' => false,
             'allowance_cash_on_delivery' => true,
             'allowance_insurance' => true,
-        ];
+        ]);
         return $result;
     }
 }

@@ -18,54 +18,68 @@ class CreateBillOfLadingRequest extends AbstractRequest
         }
         $cash_on_delivery  = 0;
         $declared_amount = 0;
+      //  dd($this->getReceiverAddress());
         if($this->getCashOnDeliveryAmount() != null && $this->getCashOnDeliveryAmount() > 0){
             $cash_on_delivery = $this->getCashOnDeliveryAmount();
         }
-        if($this->getDeclaredAmount() != null && $this->getDeclaredAmount() > 0){
+        if($this->getOtherParameters('declared') == 1 && $this->getDeclaredAmount() != null && $this->getDeclaredAmount() > 0){
             $declared_amount = $this->getDeclaredAmount();
+        }
+        $items= array();
+
+        foreach($this->getItems()->toArray() as $item){
+            $items[] = [
+                'Code' => $item['id'],
+                'Type' => 1,
+                'Weight' => $item['weight'],
+                'Length' => 10,
+                'Width' => 10,
+                'Height' => 10,
+                'ParcelContent' => $item['name']
+            ];
         }
         $data = [
             'SenderClientId' => null,
             'TertiaryClientId' => null,
             'TertiaryLocationId' => 0,
             'Sender' => [
-                'LocationId' => 919089342,
-                'Name' => 'Ivan Georgiev',
-                'CountyId' => 5,
+                'LocationId' => 0,
+                'Name' => $this->getSenderAddress()->getFullName(),
+                'CountyId' => $this->getSenderAddress()->getState()->getId(),
                 'CountyName' => '',
-                'LocalityId'=> 919089342,
-                'LocalityName' => 'Adunati',
+                'LocalityId'=> $this->getSenderAddress()->getCity()->getId(),
+                'LocalityName' => $this->getSenderAddress()->getCity()->getName(),
                 'StreetId' => '',
                 'StreetName' => '',
                 'BuildingNumber' => '',
                 'AddressText' => '',
-                'ContactPerson' => '',
+                'ContactPerson' => $this->getSenderAddress()->getFullName(),
                 'PhoneNumber' => '',
                 'Email' => '',
-                'CodPostal' => '',
-                'CountryId' => ''
+                'CodPostal' => $this->getSenderAddress()->getPostCode(),
+                'CountryId' => $this->getSenderAddress()->getCountry()->getId()
             ],
             'Recipient' => [
-                'LocationId' => '',
-                'Name' => 'Ivan Petkov',
-                'CountyId' => '',
-                'CountyName' => '',
-                'LocalityId'=> '',
-                'LocalityName' => '',
+                'LocationId' => 0,
+                'Name' => $this->getReceiverAddress()->getFullName(),
+                'CountyId' => $this->getReceiverAddress()->getState()->getId(),
+                'CountyName' =>  '',
+                'LocalityId'=> $this->getReceiverAddress()->getCity()->getId(),
+                'LocalityName' => $this->getReceiverAddress()->getCity()->getName(),
                 'StreetId' => '',
-                'StreetName' => '',
-                'BuildingNumber' => '',
-                'AddressText' => '',
-                'ContactPerson' => '',
-                'PhoneNumber' => '',
+                'StreetName' => $this->getReceiverAddress()->getStreet()->getName().' '.$this->getReceiverAddress()->getStreetNumber(),
+                'BuildingNumber' => $this->getReceiverAddress()->getBuilding(),
+                'AddressText' => $this->getReceiverAddress()->getCity()->getName().','.$this->getReceiverAddress()->getStreet()->getName().' '.$this->getReceiverAddress()->getStreetNumber(),
+                'ContactPerson' => $this->getReceiverAddress()->getFullName(),
+                'PhoneNumber' => $this->getReceiverAddress()->getPhone(),
                 'Email' => '',
-                'CodPostal' => '',
-                'CountryId' => ''
+                'CodPostal' => $this->getReceiverAddress()->getPostCode(),
+                'CountryId' => $this->getReceiverAddress()->getCountry()->getId()
             ],
-            'Parcels' => 1,
+            'Parcels' => count($items),
             'Envelopes' => 0,
-            'TotalWeight' => 5,
-            'ServiceId' => 0,
+            'TotalWeight' => (int)$this->getWeight(),
+            'ServiceId' => 1,
             'DeclaredValue' => $declared_amount,
             'CashRepayment' => $cash_on_delivery,
             'BankRepayment' => 0,
@@ -73,24 +87,24 @@ class CreateBillOfLadingRequest extends AbstractRequest
             'BarCodeRepayment' => '',
             'PaymentInstrumentId' => 0,
             'PaymentInstrumentValue' => 0,
-            'HasTertReimbursement' => true,
-            'OpenPackage' => true,
+            'HasTertReimbursement' => false,
+            'OpenPackage' => $this->getOtherParameters('open_package'),
             'PriceTableId' => 0,
             'ShipmentPayer' => $payer,
             'ShippingRepayment' => '',
-            'SaturdayDelivery' => true,
-            'MorningDelivery' => true,
+            'SaturdayDelivery' => false,
+            'MorningDelivery' => false,
             'Observations' => '',
             'PackageContent' => '',
             'CustomString' => '',
-            'BarCode' => '',
-            'ParcelCodes' => ''
+            'BarCode' => null,
+            'ParcelCodes' => $items
             ];
         return $data;
     }
 
     public function sendData($data) {
-        return $this->createResponse($this->getClient()->SendRequest('POST', 'Awbs', $data));
+        return $this->createResponse($this->getClient()->SendRequest('POST', 'Awbs/WithGetAwb', $data));
     }
 
     /**

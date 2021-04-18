@@ -16,12 +16,12 @@ class Client
     protected $error;
     protected $token;
     const SERVICE_PRODUCTION_URL = 'https://urgentcargus.azure-api.net/api/';
-    public function __construct($username, $password, $primary_key, $secondary_key, $token = null)
+    public function __construct($username, $password, $token = null)
     {
         $this->username = $username;
         $this->password = $password;
-        $this->key_primary = $primary_key;
-        $this->key_secondary = $secondary_key;
+        $this->key_primary = '2e43b07e28f443559b6c3832c46da64b';
+        $this->key_secondary = 'de662014db2240189e7578370b03b975';
         $this->token = $token;
     }
 
@@ -68,9 +68,10 @@ class Client
                     'json' => $data,
                     'headers' => $this->SetHeader($endpoint, $method, $Token)
                 ]);
+               // dd($response->getBody()->getContents());
                 return json_decode($response->getBody()->getContents());
             } catch (\Exception $e) {
-                 $this->error = [
+                return  $this->error = [
                     'code' => $e->getCode(),
                     'error' => json_decode($e->getResponse()->getBody()->getContents())
                 ];
@@ -87,18 +88,43 @@ class Client
     }
 
     public function getLocalities($country_id, $county_id){
-        $coutries = $this->SendRequest('GET', 'Localities?countryId='.$country_id.'&countyId='.$county_id);
-        if(is_null($coutries)){
+        $localities = $this->SendRequest('GET', 'Localities?countryId='.$country_id.'&countyId='.$county_id);
+        if(is_null($localities)){
             return $this->getError();
         }
-        return $coutries;
+        return $localities;
     }
 
-    public function getCities($country_id){
-        $coutries = $this->SendRequest('GET', 'Counties?countryId='.$country_id);
-        if(is_null($coutries)){
+    public function getCounties($country_id){
+        $cities = $this->SendRequest('GET', 'Counties?countryId='.$country_id);
+        if(is_null($cities)){
             return $this->getError();
         }
-        return $coutries;
+        return $cities;
+    }
+
+    public function getStreets($locality_id){
+        $streets = $this->SendRequest('GET', 'Streets?localityId='.$locality_id);
+        if(is_null($streets)){
+            return $this->getError();
+        }
+        return $streets;
+    }
+
+    public function getOffices(){
+        $offices = $this->SendRequest('GET', 'Branches');
+        if(is_null($offices)){
+            return $this->getError();
+        }
+        return $offices;
+    }
+
+    public function getPdf($bol_id, $format){
+        if($format == 'A4'){
+            $format = 0;
+        } else {
+            $format = 1;
+        }
+        return $this->SendRequest('GET', 'AwbDocuments?barCodes='.$bol_id.'&type=PDF&format='.$format.'&printMainOnce=0');
     }
 }
