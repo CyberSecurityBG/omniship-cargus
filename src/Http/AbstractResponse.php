@@ -30,13 +30,21 @@ class AbstractResponse extends BaseAbstractResponse
      */
     public function getMessage()
     {
-        if(isset($this->getClient()->getError()['error']->Error) || is_array($this->getClient()->getError()['error']) || isset($this->data->Error)){
+        if(isset($this->getClient()->getError()['error']->Error) || is_array($this->getClient()->getError()['error']) || !empty($this->getClient()->getError()['error']) || isset($this->data->Error)){
             if(isset($this->data->Error)) {
                 $message =  $this->data->Error;
             }
-            $message =  is_array($this->getClient()->getError()['error']) ? implode('<br />', $this->getClient()->getError()['error']) : $this->getClient()->getError()['error']->Error;
+            if( is_array($this->getClient()->getError()['error'])){
+                $message = implode('<br />', $this->getClient()->getError()['error']);
+            } elseif(!empty($this->getClient()->getError()['error'])){
+                $message = $this->getClient()->getError()['error'];
+            } else {
+                $message = $this->getClient()->getError()['error']->Error;
+            }
         }
-        return $message;
+        if(isset($message)) {
+            return $message;
+        }
     }
 
     /**
@@ -45,7 +53,11 @@ class AbstractResponse extends BaseAbstractResponse
     public function getCode()
     {
         if(!is_null($this->getClient()->getError()) && $this->getClient()->getError()['code'] != 200) {
-            return $this->getMessage();
+            if($this->getMessage() != 'There is no active user with the provided credential!') {
+                return $this->getMessage();
+            } else {
+                return null;
+            }
         }
         return null;
     }
