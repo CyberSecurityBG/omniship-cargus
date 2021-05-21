@@ -28,6 +28,9 @@ class CreateBillOfLadingRequest extends AbstractRequest
         $items= array();
 
         foreach($this->getItems()->toArray() as $item){
+            if(is_null($item['weight'])){
+                $item['weight'] = 0;
+            }
             $items[] = [
                 'Code' => $item['id'],
                 'Type' => 1,
