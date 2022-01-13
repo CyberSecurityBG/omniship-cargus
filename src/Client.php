@@ -52,9 +52,15 @@ class Client
             ]);
             return json_decode($response->getBody()->getContents());
         } catch (\Exception $e) {
+             $errors = json_decode($e->getResponse()->getBody()->getContents());
+             if(isset($errors->Error)){
+                 $msg = $errors->Error;
+             } else {
+                 $msg = '';
+             }
              $this->error = [
                 'code' => $e->getCode(),
-                'error' => json_decode($e->getResponse()->getBody()->getContents())
+                'error' => $msg
             ];
         }
     }
